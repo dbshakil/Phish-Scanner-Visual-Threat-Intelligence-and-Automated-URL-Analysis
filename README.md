@@ -1,4 +1,4 @@
-# Phish Scanner
+# Phish Scanner - Visual Threat Intelligence and Automated URL Analysis
 
 A simple Flask web application to scan and analyze phishing URLs. Enter a single URL or upload a .txt file of URLs to get brand, description, and screenshot results.
 
