@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phish Scanner</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Phish Scanner</h1>
+        <div class="tabs">
+            <button class="tablinks" onclick="openTab(event, 'scanner')" id="defaultTab">Phish Scanner</button>
+        </div>
+        <div id="scanner" class="tabcontent">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="text" name="url" placeholder="Enter a single URL" class="input-url">
+                <span>or</span>
+                <input type="file" name="file" accept=".txt">
+                <button type="submit">Get Details</button>
+            </form>
+            {% if results %}
+            <h2>Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Brand Name</th>
+                        <th>Description</th>
+                        <th>URL</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                    <tr>
+                        <td>{{ row.brand }}</td>
+                        <td>{{ row.description }}</td>
+                        <td>
+                            {% set url_display = row.url.replace('http://', 'hxxp://').replace('https://', 'hxxps://') %}
+                            {% if url_display|length > 40 %}
+                                {{ url_display[:18] }}...{{ url_display[-18:] }}
+                            {% else %}
+                                {{ url_display }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.screenshot_name %}
+                            <a class="screenshot-button" href="/screenshots/{{ row.screenshot_name }}" target="_blank" rel="noopener noreferrer" title="View screenshot">Shot</a>
+                            {% else %}
+                            <span class="screenshot-missing">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button id="exportBtn">Export CSV</button>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+    document.getElementById('defaultTab').click();
+
+    document.getElementById('exportBtn')?.addEventListener('click', function() {
+        const rows = Array.from(document.querySelectorAll('#scanner tbody tr')).map(tr => ({
+            brand: tr.children[0].innerText,
+            description: tr.children[1].innerText,
+            url: tr.children[2].innerText
+        }));
+        fetch('/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ results: rows })
+        })
+        .then(resp => resp.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'results.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+    });
+    </script>
+</body>
+</html>
